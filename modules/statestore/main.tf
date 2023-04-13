@@ -6,8 +6,16 @@ resource "aws_s3_bucket" "bucket" {
 }
 
 resource "aws_s3_bucket_acl" "acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.bucket_owner_control]
   bucket = aws_s3_bucket.bucket.id
   acl    = "private"
+}
+
+resource "aws_s3_bucket_ownership_controls" "bucket_owner_control" {
+  bucket = aws_s3_bucket.bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "ssec" {
@@ -46,4 +54,42 @@ data "aws_iam_policy_document" "setter" {
       "${aws_s3_bucket.bucket.arn}/rke2.yaml",
     ]
   }
+}
+
+data "aws_iam_policy_document" "deny_insecure_transport" {
+  count = var.attach_deny_insecure_transport_policy ? 1 : 0
+
+  statement {
+    sid    = "denyInsecureTransport"
+    effect = "Deny"
+
+    actions = [
+      "s3:*",
+    ]
+
+    resources = [
+      aws_s3_bucket.bucket.arn,
+      "${aws_s3_bucket.bucket.arn}/*",
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values = [
+        "false"
+      ]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "this" {
+  count = var.attach_deny_insecure_transport_policy ? 1 : 0
+
+  bucket = aws_s3_bucket.bucket.id
+  policy = data.aws_iam_policy_document.deny_insecure_transport[0].json
 }

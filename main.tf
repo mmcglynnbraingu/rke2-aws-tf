@@ -40,6 +40,8 @@ module "statestore" {
   name   = local.uname
   token  = random_password.token.result
   tags   = merge(local.default_tags, var.tags)
+
+  attach_deny_insecure_transport_policy = var.statestore_attach_deny_insecure_transport_policy
 }
 
 #
@@ -189,6 +191,7 @@ module "servers" {
   spot                        = var.spot
   load_balancers              = [module.cp_lb.name]
   wait_for_capacity_timeout   = var.wait_for_capacity_timeout
+  metadata_options            = var.metadata_options
 
   # Overrideable variables
   userdata             = data.template_cloudinit_config.this.rendered

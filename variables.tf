@@ -118,6 +118,17 @@ variable "controlplane_access_logs_bucket" {
   default     = "disabled"
 }
 
+variable "metadata_options" {
+  type        = map
+  default     = {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # IMDS-v2
+    http_put_response_hop_limit = 2          # allow pods to use IMDS as well
+    instance_metadata_tags      = "disabled"
+  }
+  description = "Instance Metadata Options"
+}
+
 #
 # RKE2 Variables
 #
@@ -161,4 +172,14 @@ variable "wait_for_capacity_timeout" {
   description = "How long Terraform should wait for ASG instances to be healthy before timing out."
   type        = string
   default     = "10m"
+}
+
+#
+### Statestore Variables
+#
+
+variable "statestore_attach_deny_insecure_transport_policy" {
+  description = "Toggle for enabling s3 policy to reject non-SSL requests"
+  type        = bool
+  default     = true
 }
